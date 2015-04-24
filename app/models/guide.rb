@@ -4,17 +4,18 @@ class Guide < ActiveRecord::Base
   }
 
   include WithSearch, WithAuthor,
-          WithWebHook, WithMarkup,
+          WithMarkup,
           WithTeaser, WithLocale
 
   #TODO rename name to title. This helps building also generic link_to compoenetns
   has_many :exercises, -> { order(position: :asc) }
-  has_many :imports
+  has_many :imports, -> { order(created_at: :desc)}
   has_many :exports
 
   belongs_to :language
 
   validates_presence_of :github_repository, :name, :author, :description
+  validates_uniqueness_of :name
   validate :valid_name?
 
   markup_on :description, :teaser
@@ -51,16 +52,12 @@ class Guide < ActiveRecord::Base
     exercises.flat_map(&:tag_list).uniq.join(', ')
   end
 
-  def github_url
-    "https://github.com/#{github_repository}"
-  end
-
-  def github_authorized_url(user)
-    "https://#{user.token}:@github.com/#{github_repository}"
-  end
-
   def stats(user)
     Stats.from_statuses exercises.map { |it| it.status_for(user) }
+  end
+
+  def github_url
+    "https://github.com/#{github_repository}"
   end
 
   def github_repository_name

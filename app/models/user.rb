@@ -6,7 +6,7 @@ class User < ActiveRecord::Base
       }
   }
 
-  include WithSearch, WithOmniauth, WithOctokit, WithFollowers
+  include WithSearch, WithOmniauth, WithGitAccess, WithFollowers
 
   has_many :submissions, foreign_key: :submitter_id
   has_many :exercises, foreign_key: :author_id
@@ -23,6 +23,8 @@ class User < ActiveRecord::Base
            through: :submissions,
            class_name: 'Exercise',
            source: :exercise
+
+  scope :inactive, -> { where('created_at < :date', date: 30.days.ago).reject(&:has_submissions?)  }
 
   def last_submission_date
     submissions.last.try(&:created_at)

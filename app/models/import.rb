@@ -2,7 +2,6 @@ class Import < ActiveRecord::Base
   extend WithAsyncAction
 
   include WithStatus
-  include WithGitGuide
 
   belongs_to :guide
   belongs_to :committer, class_name: 'User'
@@ -15,7 +14,7 @@ class Import < ActiveRecord::Base
     run_update! do
       Rails.logger.info("Importing exercises for #{guide.github_url}")
       log = nil
-      with_cloned_repo 'import' do |dir|
+      committer.with_cloned_repo guide, 'import' do |dir|
         log = read_guide! dir
       end
       {result: log.to_s, status: :passed}
@@ -35,7 +34,7 @@ class Import < ActiveRecord::Base
   def read_meta!(dir)
     meta = YAML.load_file(File.join(dir, 'meta.yml'))
 
-    language = Language.find_by!(name: meta['language'])
+    language = Language.find_by!(name: meta['language'].downcase)
     locale = meta['locale']
 
     guide.update!(language: language, locale: locale)

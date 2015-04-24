@@ -25,6 +25,7 @@ class Exercise < ActiveRecord::Base
 
   validates_presence_of :title, :description, :language, :test,
                         :submissions_count, :author, :locale
+  validates_presence_of :position, if: :guide
 
   scope :by_tag, lambda { |tag| tagged_with(tag) if tag.present? }
 
@@ -41,7 +42,7 @@ class Exercise < ActiveRecord::Base
   end
 
   def can_edit?
-    guide.nil?
+    true #TODO remove this method
   end
 
   def search_tags
@@ -50,6 +51,14 @@ class Exercise < ActiveRecord::Base
 
   def generate_original_id!
     update!(original_id: id) unless original_id
+  end
+
+  def contextualized_title
+    if guide
+      "#{position}. #{title}"
+    else
+      title
+    end
   end
 
   private
