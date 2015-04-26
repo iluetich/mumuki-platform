@@ -36,4 +36,24 @@ module ApplicationHelper
   def time_ago_in_words_or_never(date)
     date ? time_ago_in_words(date) : t(:never)
   end
+
+  def tab_list(tabs)
+    ('<ul class="nav nav-tabs" role="tablist">' +
+        tabs.map do |tab|
+%Q{<li role="presentation" class="#{'active' if tab == tabs.first }">
+<a href="##{tab}-panel" aria-controls="#{tab}" role="tab" data-toggle="tab">#{t(tab)}</a>
+</li>}
+        end.join("\n") +
+        '</ul>').html_safe
+  end
+
+  def follow_button(user)
+    restricted_to_other_user user do
+      if current_user.following?(user)
+        render 'users/unfollow', user: user, button_class: 'btn-warning'
+      else
+        render 'users/follow', user: user, button_class: 'btn-primary'
+      end
+    end
+  end
 end

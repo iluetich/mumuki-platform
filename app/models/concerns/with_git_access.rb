@@ -17,7 +17,10 @@ module WithGitAccess
   end
 
   def clone_repo_into(guide, dir)
-    Git.clone(repo_github_url(guide), '.', path: dir)
+    g = Git.clone(repo_github_url(guide), '.', path: dir)
+    g.config('user.name', name)
+    g.config('user.email', email)
+    g
   rescue Git::GitExecuteError => e
     raise 'Repository is private or does not exist' if private_repo_error(e.message)
     raise e
@@ -37,12 +40,28 @@ module WithGitAccess
     false
   end
 
+  def can_commit?(guide)
+    octokit.collaborator?(guide.github_repository, name)
+  rescue
+    false
+  end
+
   def register_post_commit_hook!(guide, web_hook)
     octokit.create_hook(
         guide.github_repository, 'web',
         {url: web_hook, content_type: 'json'},
         {events: ['push'],
          active: true})
+  end
+
+  def contributors(guide)
+    Rails.logger.info "Fetching contributors for guide #{guide}"
+    octokit.contribs(guide.github_repository)
+  end
+
+  def collaborators(guide)
+    Rails.logger.info "Fetching collaboratos for guide #{guide}"
+    octokit.collabs(guide.github_repository)
   end
 
   private

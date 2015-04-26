@@ -20,7 +20,6 @@ class Exercise < ActiveRecord::Base
 
   accepts_nested_attributes_for :expectations, reject_if: :all_blank, allow_destroy: true
 
-  before_destroy :can_destroy?
   after_initialize :defaults, if: :new_record?
 
   validates_presence_of :title, :description, :language, :test,
@@ -37,14 +36,6 @@ class Exercise < ActiveRecord::Base
     exercise.save!
   end
 
-  def can_destroy?
-    can_edit? && submissions_count == 0
-  end
-
-  def can_edit?
-    true #TODO remove this method
-  end
-
   def search_tags
     tag_list + [language.name] + (guide.try(&:name) || [])
   end
@@ -59,6 +50,10 @@ class Exercise < ActiveRecord::Base
     else
       title
     end
+  end
+
+  def collaborator?(user)
+    guide.present? && guide.authored_by?(user)
   end
 
   private

@@ -17,6 +17,7 @@ class Import < ActiveRecord::Base
       committer.with_cloned_repo guide, 'import' do |dir|
         log = read_guide! dir
       end
+      guide.update_contributors!
       {result: log.to_s, status: :passed}
     end
   end
@@ -34,10 +35,11 @@ class Import < ActiveRecord::Base
   def read_meta!(dir)
     meta = YAML.load_file(File.join(dir, 'meta.yml'))
 
-    language = Language.find_by!(name: meta['language'].downcase)
-    locale = meta['locale']
+    guide.language = Language.find_by!(name: meta['language'].downcase)
+    guide.locale = meta['locale']
+    meta['original_id_format'].try { |format| guide.original_id_format = format }
 
-    guide.update!(language: language, locale: locale)
+    guide.save!
   end
 
   def read_exercises!(dir)

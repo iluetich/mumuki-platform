@@ -14,12 +14,13 @@ class Export < ActiveRecord::Base
     Rails.logger.info "Exporting guide #{guide.name}"
     run_update! do
       committer.ensure_repo_exists! guide
-      committer.with_cloned_repo 'export', guide do |dir, repo|
+      committer.with_cloned_repo guide, 'export' do |dir, repo|
         write_guide! dir
         repo.add(all: true)
         repo.commit("Mumuki Export on #{Time.now}")
         repo.push
       end
+      {result: 'Exported', status: :passed} #TODO save sha
     end
   end
 
@@ -38,14 +39,14 @@ class Export < ActiveRecord::Base
 
     dirname = File.join dir, "#{guide.format_original_id(e)}_#{e.title}"
 
-    Dir.mkdir dirname
+    FileUtils.mkdir_p dirname
 
     write_file!(dirname, format_extension('test'), e.test)
     write_file!(dirname, 'description.md', e.description)
     write_file!(dirname, 'meta.yml', metadata_yaml(e))
 
-    write_file!(dirname, 'hint.md', e.hint) if e.hint
-    write_file!(dirname, format_extension('extra'), e.extra_code) if e.extra_code
+    write_file!(dirname, 'hint.md', e.hint) if e.hint.present?
+    write_file!(dirname, format_extension('extra'), e.extra_code) if e.extra_code.present?
     write_file!(dirname, 'expectations.yml', expectations_yaml(e)) if e.expectations.present?
   end
 

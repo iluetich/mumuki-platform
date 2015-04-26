@@ -12,9 +12,12 @@ class Guide < ActiveRecord::Base
   has_many :imports, -> { order(created_at: :desc)}
   has_many :exports
 
+  has_and_belongs_to_many :contributors, class_name: 'User', join_table: 'contributors'
+  has_and_belongs_to_many :collaborators, class_name: 'User', join_table: 'collaborators'
+
   belongs_to :language
 
-  validates_presence_of :github_repository, :name, :author, :description
+  validates_presence_of :github_repository, :name, :author
   validates_uniqueness_of :name
   validate :valid_name?
 
@@ -66,6 +69,30 @@ class Guide < ActiveRecord::Base
 
   def format_original_id(exercise)
     original_id_format % exercise.original_id
+  end
+
+  def update_contributors!
+    self.contributors = user_resources_to_users author.contributors(self)
+    save!
+  end
+
+  def update_collaborators!
+    self.collaborators = user_resources_to_users author.collaborators(self)
+    save!
+  end
+
+  def collaborator?(user)
+    collaborators.include? user
+  end
+
+  private
+
+  def user_resources_to_users(resources)
+    resources.
+        select{|it| it[:type] = 'User'}.
+        map {|it|it[:login]}.
+        map {|it| User.find_by_name(it) }.
+        compact
   end
 
 end
